@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secretlab - Canvas</title>
+    <link rel="stylesheet" href="css/main.min.css" />
+    <script src="js/storage.js"></script>
+    <script src="js/canvas.js"></script>
+    <script src="js/slides.js"></script>
+    <script defer src="js/main.js"></script>
+</head>
+<body>
+    <div id="browser-too-small">Your browser is too small. Try browsing in a screen wider than 767px</div>
+    
+    <div id="wrapper">
+        <div id="artwork--wrapper">
+            <canvas id="artwork"></canvas>
+            <div class="guiding--block"></div>
+        </div>
+        <div id="gallery"></div>
+    </div>
+    <div id="settings-sidebar">
+
+        <div class="image-name">No image</div>
+
+        <div class="actions">
+            <button class="hidden" onclick="deleteImage()">Delete</button>
+
+            <div class="sugar-coat">
+                <button id="upload_image">Upload New Image</button>
+                <input type="file" onchange="uploadImage(this);" />
+            </div>
+        </div>
+
+        <div class="nav hidden">
+            <button onClick="onPrev()">Back</button>
+            <div class="result">0 of 0</div>
+            <button onClick="onNext()">Next</button>
+        </div>
+
+        <div class="tags-container">
+            <div class="heading">Tag(s)
+                <button class="hidden" onclick="deleteAllTags()">Clear All Tags</button>
+            </div>
+            <div class="body"></div>
+        </div>
+
+    </div>
+</body>
+</html>

@@ -60,6 +60,17 @@ function deleteImage() {
     canvas.clear()
 }
 
+function editTag(index) {
+    canvas.editTag(index);
+}
+
+function cancelEditTag(index) {
+    var yes = confirm("Are you sure?");
+
+    if(yes)
+        canvas.cancelEditTag(index);
+}
+
 function deleteTag(index) {
     var yes = confirm("Are you sure?");
 

@@ -124,8 +124,26 @@ body a, body button {
   background-color: rgba(25, 118, 210, 0.25);
 }
 
+.guiding--block::before {
+  content: '';
+  width: 100%;
+  height: 100%;
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
 .guiding--block.active {
   opacity: 1;
+}
+
+.guiding--block:not(.dragging) {
+  cursor: grab;
+}
+
+.guiding--block.dragging {
+  cursor: grabbing !important;
 }
 
 #settings-sidebar {
@@ -220,6 +238,15 @@ body a, body button {
   }
 }
 
+.tags-container .body.repositioning div:not([data-type="Done"]) .tag-name,
+.tags-container .body.repositioning div:not([data-type="Done"]) a {
+  color: #a1a1a1;
+}
+
+.tags-container .body.repositioning .tag:hover {
+  background-color: transparent !important;
+}
+
 .tags-container .tag {
   display: flex;
   align-items: center;
@@ -238,6 +265,7 @@ body a, body button {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 0.95rem;
 }
 
 .tags-container .tag a {

@@ -26,6 +26,7 @@ class Canvas {
     resized = true;
 
     highlight = false;
+    mode="add";
     wrapper;
     canvas;
     ctx;
@@ -108,7 +109,87 @@ class Canvas {
                     var tag_width   = t.width * img_attr.width;
                     var tag_height  = t.height * img_attr.height;
 
+                    if(t.editing && t.editing === true && this.mode === "edit") {
+                        if(this.guide) {
+                            this.guide.innerText = t.name
+                            this.guide.classList.add('active');
 
+                            this.guide.style.fontSize = font_size;
+                            this.guide.style.padding = padding + 'px';
+                            this.guide.style.lineHeight = (font_size + 3) + 'px';
+                            this.guide.style.fontFamily = "Arial";
+                            this.guide.style.left = tag_left + 'px';
+                            this.guide.style.top = tag_top + 'px';
+                            this.guide.style.width = tag_width + 'px';
+                            this.guide.style.height = tag_height + 'px';
+                            this.guide.style.cursor = "grab";
+                            
+                            this.guide.dataset.index = i;
+                            this.guide.dataset.selected = "false";
+                            this.guide.dataset.tag_left = tag_left;
+                            this.guide.dataset.tag_top = tag_top;
+
+                            this.guide.addEventListener("mousedown", function(e){
+                                this.guide.classList.add("dragging");
+                                this.guide.dataset.selected = "true";
+
+                                var tag_left = +this.guide.dataset.tag_left;
+                                var tag_top = +this.guide.dataset.tag_top;
+
+                                var axis = this.getCursorAxis(e);
+
+                                var offset_x = axis.x - tag_left;
+                                var offset_y = axis.y - tag_top;
+
+                                this.guide.dataset.offset_x = offset_x;
+                                this.guide.dataset.offset_y = offset_y;
+                            }.bind(this));
+
+                            function cancelDrag(e) {
+                                if(this.guide.dataset.selected !== "true")
+                                    return
+
+                                this.guide.classList.remove("dragging");
+                                this.guide.dataset.selected = "false";
+
+                                this.guide.dataset.tag_left = this.guide.dataset.n_left;
+                                this.guide.dataset.tag_top = this.guide.dataset.n_top;
+
+                                var img_attr = this.img_attr;
+                                var img_width = parseFloat(img_attr.width);
+                                var img_height = parseFloat(img_attr.height);
+                      
+                                this.tags[this.guide.dataset.index].bk_left = this.tags[this.guide.dataset.index].left
+                                this.tags[this.guide.dataset.index].bk_top = this.tags[this.guide.dataset.index].top
+
+                                this.tags[this.guide.dataset.index].left = (this.guide.dataset.n_left - img_attr.x) / img_width
+                                this.tags[this.guide.dataset.index].top  = (this.guide.dataset.n_top - img_attr.y) / img_height
+                            }
+
+                            this.guide.addEventListener("mouseup", cancelDrag.bind(this));
+                            this.guide.addEventListener("mouseleave", cancelDrag.bind(this));
+
+                            this.guide.addEventListener("mousemove", function(e){
+                                if(this.guide.dataset.selected !== "true")
+                                    return;
+                                
+                                var axis = this.getCursorAxis(e)
+
+                                var n_left = axis.x - this.guide.dataset.offset_x;
+                                var n_top = axis.y - this.guide.dataset.offset_y;
+
+                                this.guide.style.left = n_left + 'px';
+                                this.guide.style.top = n_top + 'px';
+
+                                this.guide.dataset.n_left = n_left;
+                                this.guide.dataset.n_top = n_top;
+
+                            }.bind(this));
+                        }
+                        
+                        continue;
+                    }
+                        
                     this.ctx.beginPath();
                     this.ctx.rect(tag_left, tag_top, tag_width, tag_height);
                     this.ctx.strokeStyle = color;
@@ -126,6 +207,9 @@ class Canvas {
 
                     wrapText(this.ctx, t.name, text_left, text_top, text_width, line_height);
                 }
+
+                if(this.mode === "add" && this.guide)
+                    this.guide.classList.remove("active");
             }
         }
     }
@@ -154,6 +238,14 @@ class Canvas {
         };
 
         this.resized = false;
+    }
+
+    getCursorAxis(e) {
+        var boundary = this.wrapper.getBoundingClientRect();
+        var x_axix = e.clientX - boundary.left;
+        var y_axix = e.clientY - boundary.top;
+
+        return { x: x_axix, y: y_axix }
     }
 
     listenHighlight () {
@@ -196,15 +288,10 @@ class Canvas {
             }
         }
 
-        var getAxis = function (e) {
-            var boundary = this.wrapper.getBoundingClientRect();
-            var x_axix = e.clientX - boundary.left;
-            var y_axix = e.clientY - boundary.top;
-    
-            return { x: x_axix, y: y_axix }
-        }.bind(this)
-
         this.wrapper.onmouseleave = function () {
+            if(this.mode === "edit") 
+                return;
+        
             this.wrapper.style.cursor="auto";
 
             if(this.guide)
@@ -212,14 +299,18 @@ class Canvas {
         }.bind(this)
 
         this.wrapper.onmousedown = function(e) {
-            var axis = getAxis(e)
+            if(this.mode === "edit") 
+                return;
 
-            state.start_x = axis.x;
-            state.start_y = axis.y;
             state.mouse_down = true;
 
-            this.wrapper.style.cursor="crosshair";
+            var axis = this.getCursorAxis(e)
+            
+            state.start_x = axis.x;
+            state.start_y = axis.y;
 
+            this.wrapper.style.cursor="crosshair";
+            
             if(this.guide) {
                 this.guide.classList.add('active');
                 this.guide.style.left = axis.x + 'px';
@@ -230,11 +321,13 @@ class Canvas {
         }.bind(this)
 
         this.wrapper.onmouseup = function (e) {
+            if(this.mode === "edit")
+                return;
             
             var threshold_w = 20;
             var threshold_h = 20;
 
-            var axis = getAxis(e)
+            var axis = this.getCursorAxis(e)
             var attr = calHighlight(axis)
 
             state.mouse_down = false;
@@ -274,18 +367,20 @@ class Canvas {
         }.bind(this)
 
         this.wrapper.onmousemove = function (e) {
-            if(!state.mouse_down)
+            if(!state.mouse_down || this.mode === "edit")
                 return;
-            
-            var axis = getAxis(e)
-            var attr = calHighlight(axis)
-
+        
             // Draw
             if(this.guide) {
+                var axis = this.getCursorAxis(e)
+
+                var attr = calHighlight(axis)
+
                 this.guide.style.top = attr.y + 'px';
                 this.guide.style.left = attr.x + 'px';
                 this.guide.style.width = attr.width + 'px';
                 this.guide.style.height = attr.height + 'px';
+            
             }
         }.bind(this)
 
@@ -310,6 +405,38 @@ class Canvas {
         this.image.src = img;
     }
 
+    editTag(index) {
+        if(index < 0 || this.tags.length < index)
+            alert("Something is wrong, please refresh the page and try again");
+        else {
+            this.tags[index]['editing'] = !this.tags[index]['editing'];
+            this.mode = this.mode === "add" ? "edit" : "add";
+
+            if(!this.tags[index]['editing']) {
+                this.guide.innerText = "";
+            }
+
+            this.reDraw();
+        } 
+    }
+
+    cancelEditTag(index) {
+        if(index < 0 || this.tags.length < index)
+            alert("Something is wrong, please refresh the page and try again");
+        else {
+            this.tags[index]['editing'] = false;
+            this.mode = "add";
+
+            this.tags[index].left = this.tags[index].bk_left
+            this.tags[index].top = this.tags[index].bk_top
+            
+            if(this.guide)
+                this.guide.innerText = "";
+
+            this.reDraw();
+        } 
+    }
+
     deleteTag(index) {
         if(this.tags && this.tags.hasOwnProperty(index)) {
             this.tags.splice(index, 1);
@@ -330,4 +457,4 @@ class Canvas {
         if(typeof this.onUpdate === "function")
             this.onUpdate([]);
     }
-}
+} 

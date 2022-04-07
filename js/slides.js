@@ -22,8 +22,14 @@ class Slides {
         if(args.onEmpty)        this.onEmpty        = args.onEmpty;
         if(args.updateStorage)  this.updateStorage  = args.updateStorage;
 
-        for(var i = 0; i < this.items.length; i++) 
+        for(var i = 0; i < this.items.length; i++) {
             this.items[i].active = !i;
+            
+            for(var j = 0; j < this.items[i].tags.length; j++) {
+                this.items[i].tags[j]['editing'] = false;
+            }
+        }
+            
     
         this.updateSlide();
     }
@@ -131,13 +137,29 @@ class Slides {
     
         if(tags.length > 0) {
             n_tags_ui= "";
-    
+
+            var in_edit = false;
+            
             for(var i = 0; i < tags.length; i++){
-                n_tags_ui += "<div class='tag'>";
-                n_tags_ui += "  <div class='tag-name'>"+ tags[i].name +"</div>";
-                n_tags_ui += "  <a onclick='deleteTag("+i+")'>Delete</a>";
+                if(!in_edit)
+                    in_edit = tags[i].editing === true;
+
+                var tag = tags[i];
+                var text = tags[i].editing ? "Done" : "Reposition";
+                var del = tags[i].editing ? "Cancel" : "Delete";
+                var delCallback = tags[i].editing ? "cancelEditTag" : "deleteTag";
+
+                n_tags_ui += "<div class='tag' data-type='"+text+"'>";
+                n_tags_ui += "  <div class='tag-name'>"+ tag.name +"</div>";
+                n_tags_ui += "  <a onclick='editTag("+i+")'>"+text+"</a>";
+                n_tags_ui += "  <a onclick='"+delCallback+"("+i+")'>"+del+"</a>";
                 n_tags_ui += "</div>";
             }
+
+            if(in_edit) 
+                ui_tags.classList.add("repositioning");
+            else
+                ui_tags.classList.remove("repositioning");
     
             ui_action.classList.remove("hidden");
         }

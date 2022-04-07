@@ -134,8 +134,27 @@ body a, body button {
   left: 0;
 }
 
-.guiding--block.active {
+.guiding--block.active-2, .guiding--block.active {
   opacity: 1;
+}
+
+.guiding--block.active-2 .guiding--resize {
+  border-radius: 14px;
+  width: 14px;
+  height: 14px;
+  display: block;
+  background-color: #1976D2;
+  border: 1px solid rgba(66, 165, 245, 0.8);
+  position: absolute;
+  top: 100%;
+  left: 100%;
+  transform: translate(-50%, -50%);
+  cursor: move;
+  z-index: 1;
+}
+
+.guiding--block.active-2 .guidding--text {
+  pointer-events: none;
 }
 
 .guiding--block:not(.dragging) {

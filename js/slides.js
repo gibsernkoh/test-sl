@@ -145,7 +145,7 @@ class Slides {
                     in_edit = tags[i].editing === true;
 
                 var tag = tags[i];
-                var text = tags[i].editing ? "Done" : "Reposition";
+                var text = tags[i].editing ? "Done" : "Adjust";
                 var del = tags[i].editing ? "Cancel" : "Delete";
                 var delCallback = tags[i].editing ? "cancelEditTag" : "deleteTag";
 

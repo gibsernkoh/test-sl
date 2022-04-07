@@ -27,6 +27,7 @@ class Canvas {
 
     highlight = false;
     mode="add";
+    resizing=false;
     wrapper;
     canvas;
     ctx;
@@ -42,6 +43,8 @@ class Canvas {
             this.canvas = args.canvas;
             this.wrapper = this.canvas.parentNode;
             this.guide = this.wrapper.querySelector('.guiding--block');
+            this.guide_text = this.guide.querySelector('.guiding--text');
+            this.guide_resize = this.guide.querySelector('.guiding--resize');
 
             this.ctx = this.canvas.getContext('2d');
             
@@ -58,6 +61,73 @@ class Canvas {
 
                 this.reDraw();
             }.bind(this);
+
+            if(this.guide_resize){
+                this.guide_resize.dataset.selected = "false";
+
+                function updateSize(e, a) {
+                    var axis = a.getCursorAxis(e);
+
+                    var n_width = axis.x - +a.guide.dataset.tag_left;
+                    var n_height = axis.y - +a.guide.dataset.tag_top;
+
+                    if(n_width > 100)  {
+                        a.guide.style.width = n_width + "px";
+                        a.guide.dataset.n_width = n_width / a.img_attr.width;
+                    }
+                    
+                    if(n_height > 100) {
+                        a.guide.style.height = n_height + "px";
+                        a.guide.dataset.n_height = n_height / a.img_attr.height;
+                    }
+                }
+
+                this.guide_resize.addEventListener("mousedown", function(e){
+
+                    this.guide.dataset.selected = "false";
+                    this.guide_resize.dataset.selected = "true";
+                    this.resizing = true;
+
+                    updateSize(e, this)
+                }.bind(this));
+
+                this.wrapper.addEventListener("mousemove", function(e){
+                    if(this.guide_resize.dataset.selected !== "true")
+                        return;
+
+                    e.stopImmediatePropagation();
+
+                    updateSize(e, this)
+                }.bind(this));
+
+                this.guide_resize.addEventListener("mouseup", function(){
+                    this.guide_resize.dataset.selected = "false";
+                    this.resizing = false;
+
+                    var curr = this.guide.dataset.index;
+
+                    this.tags[curr].width = this.guide.dataset.n_width
+                    this.tags[curr].height = this.guide.dataset.n_height
+                }.bind(this));
+
+                this.wrapper.addEventListener("mouseup", function(e){
+                    
+                    if(this.guide) {
+                        this.guide.dataset.selected = "false";
+                        this.guide_resize.dataset.selected = "false";
+                        this.resizing = false;
+                    }
+                }.bind(this));
+
+                this.wrapper.addEventListener("mouseleave", function(){
+      
+                    if(this.guide) {
+                        this.guide.dataset.selected = "false";
+                        this.guide_resize.dataset.selected = "false";
+                        this.resizing = false;
+                    }
+                });
+            }
 
             window.dispatchEvent(new Event("resize"));
         }
@@ -94,7 +164,7 @@ class Canvas {
             if(this.tags.length > 0) {
                 
                 var padding = 8;
-                var color = "#000";
+                var color = "#222";
                 var font_size = window.innerWidth * 0.02;
 
                 if(font_size > 18)
@@ -111,80 +181,13 @@ class Canvas {
 
                     if(t.editing && t.editing === true && this.mode === "edit") {
                         if(this.guide) {
-                            this.guide.innerText = t.name
-                            this.guide.classList.add('active');
-
-                            this.guide.style.fontSize = font_size;
-                            this.guide.style.padding = padding + 'px';
-                            this.guide.style.lineHeight = (font_size + 3) + 'px';
-                            this.guide.style.fontFamily = "Arial";
-                            this.guide.style.left = tag_left + 'px';
-                            this.guide.style.top = tag_top + 'px';
-                            this.guide.style.width = tag_width + 'px';
-                            this.guide.style.height = tag_height + 'px';
-                            this.guide.style.cursor = "grab";
+                            this.guide_text.innerText = t.name
                             
-                            this.guide.dataset.index = i;
-                            this.guide.dataset.selected = "false";
-                            this.guide.dataset.tag_left = tag_left;
-                            this.guide.dataset.tag_top = tag_top;
-
-                            this.guide.addEventListener("mousedown", function(e){
-                                this.guide.classList.add("dragging");
-                                this.guide.dataset.selected = "true";
-
-                                var tag_left = +this.guide.dataset.tag_left;
-                                var tag_top = +this.guide.dataset.tag_top;
-
-                                var axis = this.getCursorAxis(e);
-
-                                var offset_x = axis.x - tag_left;
-                                var offset_y = axis.y - tag_top;
-
-                                this.guide.dataset.offset_x = offset_x;
-                                this.guide.dataset.offset_y = offset_y;
-                            }.bind(this));
-
-                            function cancelDrag(e) {
-                                if(this.guide.dataset.selected !== "true")
-                                    return
-
-                                this.guide.classList.remove("dragging");
-                                this.guide.dataset.selected = "false";
-
-                                this.guide.dataset.tag_left = this.guide.dataset.n_left;
-                                this.guide.dataset.tag_top = this.guide.dataset.n_top;
-
-                                var img_attr = this.img_attr;
-                                var img_width = parseFloat(img_attr.width);
-                                var img_height = parseFloat(img_attr.height);
-                      
-                                this.tags[this.guide.dataset.index].bk_left = this.tags[this.guide.dataset.index].left
-                                this.tags[this.guide.dataset.index].bk_top = this.tags[this.guide.dataset.index].top
-
-                                this.tags[this.guide.dataset.index].left = (this.guide.dataset.n_left - img_attr.x) / img_width
-                                this.tags[this.guide.dataset.index].top  = (this.guide.dataset.n_top - img_attr.y) / img_height
-                            }
-
-                            this.guide.addEventListener("mouseup", cancelDrag.bind(this));
-                            this.guide.addEventListener("mouseleave", cancelDrag.bind(this));
-
-                            this.guide.addEventListener("mousemove", function(e){
-                                if(this.guide.dataset.selected !== "true")
-                                    return;
-                                
-                                var axis = this.getCursorAxis(e)
-
-                                var n_left = axis.x - this.guide.dataset.offset_x;
-                                var n_top = axis.y - this.guide.dataset.offset_y;
-
-                                this.guide.style.left = n_left + 'px';
-                                this.guide.style.top = n_top + 'px';
-
-                                this.guide.dataset.n_left = n_left;
-                                this.guide.dataset.n_top = n_top;
-
-                            }.bind(this));
+                            this.guide_text.style.fontSize = font_size;
+                            this.guide_text.style.padding = padding + 'px';
+                            this.guide_text.style.lineHeight = (font_size + 3) + 'px';
+                           
+                            this.setupGuidingBlock(t, i);
                         }
                         
                         continue;
@@ -412,10 +415,10 @@ class Canvas {
             this.tags[index]['editing'] = !this.tags[index]['editing'];
             this.mode = this.mode === "add" ? "edit" : "add";
 
-            if(!this.tags[index]['editing']) {
-                this.guide.innerText = "";
-            }
-
+            if(!this.tags[index]['editing']) 
+                this.resetGuidingBlock();
+            
+            //
             this.reDraw();
         } 
     }
@@ -427,14 +430,125 @@ class Canvas {
             this.tags[index]['editing'] = false;
             this.mode = "add";
 
-            this.tags[index].left = this.tags[index].bk_left
-            this.tags[index].top = this.tags[index].bk_top
+            this.tags[index].left = this.guide.dataset.bk_left
+            this.tags[index].top = this.guide.dataset.bk_top
+
+            this.tags[index].width = this.guide.dataset.bk_width
+            this.tags[index].height = this.guide.dataset.bk_height
             
-            if(this.guide)
-                this.guide.innerText = "";
+            this.resetGuidingBlock();
 
             this.reDraw();
         } 
+    }
+
+    setupGuidingBlock(tag, index) {
+        if(!this.guide) 
+            return;
+
+        var img_attr    = this.img_attr;
+        var tag_left    = tag.left * img_attr.width + img_attr.x;
+        var tag_top     = tag.top * img_attr.height + img_attr.y;
+
+        var tag_width   = tag.width * img_attr.width;
+        var tag_height  = tag.height * img_attr.height;
+
+        // Handle Style
+        this.guide.style.fontFamily = "Arial";
+        this.guide.style.left = tag_left + 'px';
+        this.guide.style.top = tag_top + 'px';
+        this.guide.style.width = tag_width + 'px';
+        this.guide.style.height = tag_height + 'px';
+        this.guide.style.cursor = "grab";
+
+
+        // Handle State
+        this.guide.dataset.index = index;
+        this.guide.dataset.selected = "false";
+
+        this.guide.dataset.tag_left = tag_left;
+        this.guide.dataset.tag_top = tag_top;
+
+        this.guide.dataset.offset_x = 0;
+        this.guide.dataset.offset_y = 0;
+
+        this.guide.dataset.n_left = tag_left;
+        this.guide.dataset.n_top = tag_top;
+
+        this.guide.dataset.bk_left = tag.left;
+        this.guide.dataset.bk_top = tag.top;
+
+        this.guide.dataset.bk_width = tag.width;
+        this.guide.dataset.bk_height = tag.height;
+
+        this.guide.classList.add('active-2'); // Show
+
+        this.guide.addEventListener("mousedown", function(e){
+
+            this.guide.classList.add("dragging");
+            this.guide.dataset.selected = "true";
+
+            var tag_left = +this.guide.dataset.tag_left;
+            var tag_top = +this.guide.dataset.tag_top;
+
+            var axis = this.getCursorAxis(e);
+
+            var offset_x = axis.x - tag_left;
+            var offset_y = axis.y - tag_top;
+
+            this.guide.dataset.offset_x = offset_x;
+            this.guide.dataset.offset_y = offset_y;
+        }.bind(this));
+
+        this.guide.addEventListener("mouseup", function (){
+            if(!this.resizing && this.guide.dataset.selected === "true") {
+                this.guide.classList.remove("dragging");
+                this.guide.dataset.selected = "false";
+
+                this.guide.dataset.tag_left = this.guide.dataset.n_left;
+                this.guide.dataset.tag_top = this.guide.dataset.n_top;
+
+                var img_attr = this.img_attr;
+                var img_width = parseFloat(img_attr.width);
+                var img_height = parseFloat(img_attr.height);
+
+                this.tags[this.guide.dataset.index].left = (this.guide.dataset.n_left - img_attr.x) / img_width
+                this.tags[this.guide.dataset.index].top  = (this.guide.dataset.n_top - img_attr.y) / img_height
+            }
+        }.bind(this));
+
+        this.guide.addEventListener("mouseleave", function(){
+            if(!this.resizing && this.guide.dataset.selected === "true") {
+                this.guide.classList.remove("dragging");
+                this.guide.dataset.selected = "false";
+            }
+        }.bind(this));
+
+        this.guide.addEventListener("mousemove", function(e){
+            e.preventDefault();
+
+            if(this.guide.dataset.selected !== "true" || this.resizing)
+                return;
+            
+            var axis = this.getCursorAxis(e)
+
+            var n_left = axis.x - this.guide.dataset.offset_x;
+            var n_top = axis.y - this.guide.dataset.offset_y;
+
+            this.guide.style.left = n_left + 'px';
+            this.guide.style.top = n_top + 'px';
+
+            this.guide.dataset.n_left = n_left;
+            this.guide.dataset.n_top = n_top;
+
+        }.bind(this));
+    }
+
+    resetGuidingBlock() {
+        if(this.guide) {
+            this.guide_text.innerText = "";
+            this.guide.classList.remove("active-2");
+        }
     }
 
     deleteTag(index) {
